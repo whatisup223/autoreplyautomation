@@ -1,132 +1,261 @@
+import React, { useState, useEffect } from 'react';
+import {
+  MessageSquare,
+  ThumbsUp,
+  Clock,
+  Zap,
+  TrendingUp,
+  MoreHorizontal,
+  ArrowUpRight,
+  Facebook,
+  Bot,
+  Smile,
+  Frown,
+  Meh,
+  Activity,
+  Target,
+  ShieldCheck
+} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { dbService } from '../services/dbService';
 
-import React from 'react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  Cell
-} from 'recharts';
-import { MessageCircle, ThumbsUp, EyeOff, Cpu, Zap, ArrowUpRight, CheckCircle2 } from 'lucide-react';
-
-const data = [
-  { name: 'السبت', replies: 40, comments: 24 },
-  { name: 'الأحد', replies: 30, comments: 13 },
-  { name: 'الاثنين', replies: 20, comments: 98 },
-  { name: 'الثلاثاء', replies: 27, comments: 39 },
-  { name: 'الأربعاء', replies: 18, comments: 48 },
-  { name: 'الخميس', replies: 23, comments: 38 },
-  { name: 'الجمعة', replies: 34, comments: 43 },
-];
-
-const StatCard = ({ title, value, icon: Icon, color, trend }: any) => {
-  const colorClasses: any = {
-    blue: 'bg-blue-600 text-white shadow-blue-500/20',
-    emerald: 'bg-emerald-600 text-white shadow-emerald-500/20',
-    orange: 'bg-orange-500 text-white shadow-orange-500/20',
-    purple: 'bg-purple-600 text-white shadow-purple-500/20'
+const StatCard = ({ title, value, icon: Icon, trend, color, unit }: any) => {
+  const colors: any = {
+    blue: 'bg-indigo-600 text-white shadow-indigo-500/30',
+    purple: 'bg-purple-600 text-white shadow-purple-500/30',
+    emerald: 'bg-emerald-600 text-white shadow-emerald-500/30',
+    orange: 'bg-orange-500 text-white shadow-orange-500/30',
   };
 
   return (
-    <div className="glass-card p-6 rounded-[2rem] hover:shadow-xl transition duration-500 group">
-      <div className="flex items-center justify-between mb-4">
-        <div className={`p-4 rounded-2xl ${colorClasses[color]} group-hover:scale-110 transition duration-500`}>
+    <div className="glass-card p-6 rounded-[2.5rem] bg-white/70 backdrop-blur-md border border-white hover:shadow-2xl hover:shadow-indigo-500/5 transition duration-500 group">
+      <div className="flex justify-between items-start mb-4">
+        <div className={`p-4 rounded-2xl ${colors[color]} shadow-xl group-hover:scale-110 transition duration-500`}>
           <Icon size={24} />
         </div>
-        {trend && (
-          <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-            <ArrowUpRight size={12} /> {trend}
-          </span>
-        )}
+        <div className="flex flex-col items-end">
+          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">{trend}</span>
+          {unit && <span className="text-[10px] text-slate-400 font-bold mt-1 tracking-widest uppercase">{unit}</span>}
+        </div>
       </div>
-      <p className="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">{title}</p>
-      <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{value}</h3>
+      <div>
+        <p className="text-slate-500 text-[10px] font-bold mb-1 uppercase tracking-widest">{title}</p>
+        <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{value}</h3>
+      </div>
     </div>
   );
 };
 
 const Dashboard: React.FC = () => {
-  const connectedPages = JSON.parse(localStorage.getItem('connected_pages') || '[]');
-  const activeWebhooks = connectedPages.filter((p: any) => p.tasks?.includes('webhook_active')).length;
+  const { t } = useTranslation();
+  const [stats, setStats] = useState<any>(null);
+  const [recentLogs, setRecentLogs] = useState<any[]>([]);
 
-  const recentEvents = [
-    { id: 1, text: "تم الرد على استفسار السعر بذكاء", time: "منذ دقيقتين", type: "ai" },
-    { id: 2, text: "إخفاء تعليق يحتوي على أرقام هواتف", time: "منذ 10 دقائق", type: "hide" },
-    { id: 3, text: "أتمتة ناجحة لمنشور متجر الأناقة", time: "منذ ساعة", type: "setup" },
-  ];
+  useEffect(() => {
+    setStats(dbService.getStats());
+    setRecentLogs(dbService.getLogs().slice(0, 5));
+  }, []);
+
+  if (!stats) return null;
+
+  const totalLogs = stats.total_replies || 1;
+  const sentiment = stats.sentiment_summary;
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center bg-slate-900 p-10 rounded-[3rem] shadow-2xl relative overflow-hidden">
-        <div className="relative z-10 space-y-3">
-          <h2 className="text-3xl font-bold text-white tracking-tight">أهلاً بك، أحمد المشرف 👋</h2>
-          <p className="text-slate-400 text-sm font-medium max-w-md leading-relaxed">أداء ممتاز! لقد قام نظامك بمعالجة 124 تعليقاً بنجاح خلال آخر 24 ساعة الماضية.</p>
+    <div className="space-y-8 pb-12">
+      {/* Page Heading */}
+      <div className="flex justify-between items-end">
+        <div>
+          <h2 className="text-3xl font-bold text-slate-900">{t('dashboard_title')}</h2>
+          <p className="text-slate-500 text-sm font-semibold mt-1">{t('dashboard_subtitle')}</p>
         </div>
-        <div className="flex gap-4 mt-8 md:mt-0 relative z-10">
-          <div className="glass px-6 py-4 rounded-[1.5rem] border-white/10">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">الصفحات النشطة</p>
-            <p className="text-2xl font-bold text-white">{activeWebhooks} / {connectedPages.length}</p>
+        <div className="flex gap-4">
+          <div className="px-4 py-2 bg-white rounded-xl border border-slate-100 flex items-center gap-3 shadow-sm">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">{t('system_operational')}</span>
           </div>
-          <button className="bg-blue-600 text-white px-8 py-4 rounded-[1.5rem] hover:bg-blue-700 transition font-bold text-sm shadow-xl shadow-blue-500/20">
-             تحليل الأداء الكامل
-          </button>
         </div>
-        {/* Abstract Background Design */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full -ml-10 -mb-10 blur-2xl"></div>
-      </header>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="إجمالي الردود" value="1,245" icon={MessageCircle} color="blue" trend="+12%" />
-        <StatCard title="إعجابات تلقائية" value="850" icon={ThumbsUp} color="emerald" trend="+5%" />
-        <StatCard title="تعليقات مخفية" value="124" icon={EyeOff} color="orange" trend="+24%" />
-        <StatCard title="استهلاك AI" value="452" icon={Cpu} color="purple" trend="+8%" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 glass-card p-8 rounded-[2.5rem]">
-          <div className="flex justify-between items-center mb-10">
-            <h3 className="text-xl font-bold text-slate-900">تحليل التفاعل الأسبوعي</h3>
-            <div className="glass px-4 py-2 rounded-xl">
-              <select className="bg-transparent text-xs font-bold text-slate-600 outline-none cursor-pointer">
-                <option>آخر 7 أيام</option>
-                <option>آخر 30 يوم</option>
-              </select>
+      {/* Hero Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard title={t('total_replies')} value={stats.total_replies} icon={MessageSquare} trend="+12%" color="blue" />
+        <StatCard title={t('active_bot_pages')} value={stats.active_pages} icon={Facebook} trend="+2" color="purple" />
+        <StatCard title={t('saved_hours')} value={stats.saved_hours} icon={Clock} trend="+85%" color="emerald" unit={t('month')} />
+        <StatCard title={t('response_speed')} value={stats.avg_response_time} icon={Zap} trend="-15%" color="orange" unit={t('sec')} />
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Main Chart Area */}
+        <div className="lg:col-span-2 glass-card p-8 rounded-[2.5rem] bg-white/60 border border-white">
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900">{t('performance_overview')}</h3>
+              <p className="text-slate-500 text-sm font-medium mt-1">{t('performance_growth')}</p>
+            </div>
+            <div className="flex gap-2">
+              <button className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest">30D</button>
+              <button className="px-3 py-1.5 bg-white text-slate-400 rounded-lg text-[10px] font-bold uppercase tracking-widest">7D</button>
             </div>
           </div>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 11, fontWeight: 700, fill: '#64748b'}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 11, fontWeight: 700, fill: '#64748b'}} />
-                <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.1)', fontFamily: 'IBM Plex Sans Arabic'}} />
-                <Bar dataKey="replies" fill="#3b82f6" radius={[8, 8, 0, 0]} barSize={24} />
-                <Bar dataKey="comments" fill="#10b981" radius={[8, 8, 0, 0]} barSize={24} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+          <div className="h-64 flex items-end justify-between gap-4 px-4 relative">
+            {/* Grid Lines */}
+            <div className="absolute inset-0 flex flex-col justify-between opacity-5 pointer-events-none">
+              {[1, 2, 3, 4].map(i => <div key={i} className="w-full border-t border-slate-900"></div>)}
+            </div>
 
-        <div className="glass-card p-8 rounded-[2.5rem] flex flex-col">
-          <h3 className="text-xl font-bold text-slate-900 mb-8">النشاط الأخير</h3>
-          <div className="flex-1 space-y-6">
-            {recentEvents.map(event => (
-              <div key={event.id} className="flex gap-5 group">
-                <div className={`w-1.5 h-12 rounded-full shrink-0 transition-transform duration-500 group-hover:scale-y-125 ${event.type === 'ai' ? 'bg-blue-500' : event.type === 'hide' ? 'bg-orange-500' : 'bg-emerald-500'}`}></div>
-                <div>
-                  <p className="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition">{event.text}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{event.time}</p>
+            {[45, 60, 40, 80, 55, 90, 70].map((h, i) => (
+              <div key={i} className="flex-1 group relative flex flex-col items-center">
+                <div className="w-full bg-gradient-to-t from-indigo-600 via-indigo-500 to-indigo-400 rounded-t-xl transition-all duration-700 hover:scale-x-105 cursor-pointer relative" style={{ height: `${h}%` }}>
+                  <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition"></div>
+                </div>
+                <div className="absolute -top-12 bg-slate-900 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition -translate-y-2 group-hover:translate-y-0 shadow-xl z-10 whitespace-nowrap">
+                  {h * 12} {t('total_comments')}
                 </div>
               </div>
             ))}
           </div>
-          <button className="mt-10 w-full py-4 glass text-slate-600 font-bold rounded-2xl text-xs hover:bg-white transition shadow-sm">
-            سجل النشاط الكامل
-          </button>
+          <div className="flex justify-between mt-8 px-4">
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
+              <span key={d} className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{d}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Sentiment Analysis Side Card */}
+        <div className="glass-card p-8 rounded-[2.5rem] bg-white/60 border border-white flex flex-col">
+          <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+            <Target size={20} className="text-indigo-600" />
+            {t('sentiment_analysis')}
+          </h3>
+
+          <div className="flex-1 space-y-6">
+            <div className="flex items-center gap-6 p-6 bg-indigo-50 rounded-[2rem] border border-indigo-100 mb-8">
+              <div className="relative w-20 h-20 shrink-0">
+                <svg className="w-full h-full transform -rotate-90">
+                  <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-200" />
+                  <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-indigo-600" strokeDasharray={213} strokeDashoffset={213 - (213 * (sentiment.positive / totalLogs))} />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center font-bold text-indigo-700 text-lg">
+                  {Math.round((sentiment.positive / totalLogs) * 100)}%
+                </div>
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-900 text-sm mb-1">{t('brand_health')}</h4>
+                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">{t('status_active')}</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
+                  <span className="flex items-center gap-1.5 text-emerald-600"><Smile size={14} /> {t('positive')}</span>
+                  <span className="text-slate-400">{sentiment.positive}</span>
+                </div>
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-white shadow-inner">
+                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(sentiment.positive / totalLogs) * 100}%` }}></div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
+                  <span className="flex items-center gap-1.5 text-slate-500"><Meh size={14} /> {t('neutral')}</span>
+                  <span className="text-slate-400">{sentiment.neutral}</span>
+                </div>
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-white shadow-inner">
+                  <div className="h-full bg-slate-400 rounded-full" style={{ width: `${(sentiment.neutral / totalLogs) * 100}%` }}></div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
+                  <span className="flex items-center gap-1.5 text-red-600"><Frown size={14} /> {t('negative')}</span>
+                  <span className="text-slate-400">{sentiment.negative}</span>
+                </div>
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-white shadow-inner">
+                  <div className="h-full bg-red-500 rounded-full" style={{ width: `${(sentiment.negative / totalLogs) * 100}%` }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-slate-100">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">{t('urgent_actions_required')}</p>
+            <div className="flex items-center gap-3 p-4 bg-red-50 rounded-2xl border border-red-100 animate-pulse">
+              <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-red-200">
+                <Bot size={20} />
+              </div>
+              <p className="text-[10px] font-bold text-red-700 leading-tight">{t('urgent_negative_detected')}</p>
+              <ArrowUpRight size={18} className="text-red-300 ml-auto" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Section: Hot Topics & Activity */}
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* Hot Topics */}
+        <div className="glass-card p-8 rounded-[2.5rem] bg-white/60 border border-white">
+          <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+            <TrendingUp size={20} className="text-purple-600" />
+            {t('hot_topics')} & {t('top_intents')}
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { key: 'intent_pricing', count: 124, color: 'bg-blue-100 text-blue-600' },
+              { key: 'intent_feature', count: 85, color: 'bg-purple-100 text-purple-600' },
+              { key: 'intent_technical', count: 42, color: 'bg-orange-100 text-orange-600' },
+              { key: 'intent_feedback', count: 210, color: 'bg-emerald-100 text-emerald-600' }
+            ].map(topic => (
+              <div key={topic.key} className={`p-4 rounded-2xl border border-white shadow-sm flex flex-col transition hover:scale-105 duration-300 ${topic.color}`}>
+                <span className="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-1">{t(topic.key)}</span>
+                <span className="text-xl font-bold">{topic.count}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 flex flex-wrap gap-2">
+            {['#Pricing', '#Delivery_Time', '#Bot_Accuracy', '#Feature_Request', '#Customer_Support'].map(tag => (
+              <span key={tag} className="px-3 py-1 bg-white border border-slate-100 rounded-lg text-[10px] font-bold text-slate-500 uppercase">{tag}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Activity Mini List */}
+        <div className="glass-card p-8 rounded-[2.5rem] bg-white/60 border border-white">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <Activity size={20} className="text-emerald-600" />
+              {t('recent_activity')}
+            </h3>
+            <button className="text-indigo-600 font-bold text-xs hover:underline uppercase tracking-widest">{t('view_all')}</button>
+          </div>
+          <div className="space-y-4">
+            {recentLogs.map((log) => (
+              <div key={log.id} className="flex items-center justify-between p-4 bg-white/40 border border-white rounded-2xl hover:bg-white transition duration-300 group">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 font-bold group-hover:bg-indigo-600 group-hover:text-white transition duration-500">
+                    {log.user?.charAt(0) || 'A'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 leading-none mb-1">{log.user}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase truncate max-w-[150px]">{log.content}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6">
+                  {log.sentiment && (
+                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${log.sentiment === 'positive' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                      log.sentiment === 'negative' ? 'bg-red-50 text-red-600 border-red-100' :
+                        'bg-slate-50 text-slate-500 border-slate-100'
+                      }`}>
+                      {log.sentiment === 'positive' ? <Smile size={12} /> : log.sentiment === 'negative' ? <Frown size={12} /> : <Meh size={12} />}
+                      {t(log.sentiment)}
+                    </div>
+                  )}
+                  <span className="text-[10px] font-bold text-slate-300">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
