@@ -1,0 +1,8 @@
+{
+  "name": "AutoReply Pro AI - أوتو ريبلاي برو",
+  "description": "منصة SaaS متكاملة لأتمتة الردود على تعليقات ورسائل فيسبوك باستخدام الذكاء الاصطناعي، مع ميزات الإخفاء التلقائي، الإعجاب، والمنشن.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
